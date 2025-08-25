@@ -2,7 +2,7 @@
 
 <p style="text-align: center;">
   <a href="https://github.com/deepaksorthiya/spring-boot-async-task/workflows/maven-build.yml">
-    <img src="https://github.com/deepaksorthiya/spring-boot-async-task/actions/workflows/maven-build.yml/badge.svg" alt="Java Maven Build Test"/>
+    <img src="https://github.com/deepaksorthiya/spring-boot-async-task/actions/workflows/maven-jvm-non-native-build.yml/badge.svg" alt="Java Maven Build Test"/>
   </a>
   <a href="https://hub.docker.com/r/deepaksorthiya/spring-boot-async-task">
     <img src="https://img.shields.io/docker/pulls/deepaksorthiya/spring-boot-async-task" alt="Docker"/>
