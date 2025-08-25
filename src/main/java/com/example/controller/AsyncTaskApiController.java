@@ -47,4 +47,18 @@ public class AsyncTaskApiController {
         asyncTaskService.cancelScheduleAsyncTask();
         return ResponseEntity.ok().body("SUCCESS");
     }
+
+    @GetMapping("/schedule-async-task-with-future")
+    public ResponseEntity<String> scheduleAsyncTaskWithCompletableFuture() {
+        LOGGER.info("AsyncTaskApiController#scheduleAsyncTaskWithCompletableFuture Schedule Task With Future executed :: {}", Thread.currentThread());
+        asyncTaskService.scheduleAsyncTaskWithCompletableFuture();
+        return ResponseEntity.ok().body("SUCCESS");
+    }
+
+    @GetMapping("/cancel-all")
+    public ResponseEntity<String> cancelAllScheduleAsyncTask() {
+        LOGGER.info("AsyncTaskApiController#cancelAllScheduleAsyncTask Schedule Task With Future executed :: {}", Thread.currentThread());
+        asyncTaskService.cancelAllScheduleAsyncTask();
+        return ResponseEntity.ok().body("SUCCESS");
+    }
 }

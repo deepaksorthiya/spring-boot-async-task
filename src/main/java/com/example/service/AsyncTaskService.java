@@ -7,14 +7,17 @@ import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor;
+import org.springframework.scheduling.config.ScheduledTask;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.locks.LockSupport;
 
@@ -25,11 +28,13 @@ public class AsyncTaskService {
 
     private final TaskScheduler taskScheduler;
     private final AsyncTaskExecutor applicationTaskExecutor;
+    private final ScheduledAnnotationBeanPostProcessor scheduledAnnotationBeanPostProcessor;
     private ScheduledFuture<?> scheduledFuture;
 
-    public AsyncTaskService(TaskScheduler taskScheduler, @Qualifier("applicationTaskExecutor") AsyncTaskExecutor applicationTaskExecutor) {
+    public AsyncTaskService(TaskScheduler taskScheduler, @Qualifier("applicationTaskExecutor") AsyncTaskExecutor applicationTaskExecutor, ScheduledAnnotationBeanPostProcessor scheduledAnnotationBeanPostProcessor) {
         this.taskScheduler = taskScheduler;
         this.applicationTaskExecutor = applicationTaskExecutor;
+        this.scheduledAnnotationBeanPostProcessor = scheduledAnnotationBeanPostProcessor;
     }
 
     public void startAsyncTaskProgrammatically() {
@@ -52,7 +57,9 @@ public class AsyncTaskService {
     public void doScheduleAsyncTask() {
         // Simulate a long-running task
         LOGGER.info("Schedule Async task Running in thread: {}", Thread.currentThread());
-        this.scheduledFuture = taskScheduler.scheduleAtFixedRate((() -> LOGGER.info("Schedule Task executed :: {}", Thread.currentThread())), Duration.ofSeconds(3));
+        this.scheduledFuture = taskScheduler.scheduleAtFixedRate((
+                        () -> LOGGER.info("Schedule Task executed In Thread:: {} at :: {}", Thread.currentThread(), LocalDateTime.now())),
+                Duration.ofSeconds(3));
         LockSupport.parkNanos(5 * 1_000_000_000L);
         LOGGER.info("Schedule Async task completed in thread: {}", Thread.currentThread());
     }
@@ -65,34 +72,39 @@ public class AsyncTaskService {
         }
     }
 
-    public void asyncWithCompletableFuture() throws ExecutionException, InterruptedException {
-        Future<Long> future = applicationTaskExecutor.submit(() -> {
-            LockSupport.parkNanos(5 * 1_000_000_000L);
-            System.out.println("Current thread: " + Thread.currentThread());
-            return Thread.currentThread().threadId();
-        });
+    public void cancelAllScheduleAsyncTask() {
+        Set<ScheduledTask> scheduledTasks = this.scheduledAnnotationBeanPostProcessor.getScheduledTasks();
+        scheduledTasks.forEach(scheduledTask -> scheduledTask.cancel(true));
+        LOGGER.info("Cancel All Async task Running in thread: {}", Thread.currentThread());
+    }
 
-        System.out.println(future.get());
-
+    public void scheduleAsyncTaskWithCompletableFuture() {
         // Use Spring's TaskScheduler to schedule a Runnable and set the result in a
         // CompletableFuture
         CompletableFuture<Integer> randomValueFuture = new CompletableFuture<>();
         Runnable randomTask = () -> {
+            LOGGER.info("Schedule Async With Future task Running in thread: {}", Thread.currentThread());
             int randomValue = new Random().nextInt(100); // random value between 0-99
             System.out.println("Random value: " + randomValue);
+            LockSupport.parkNanos(3 * 1_000_000_000L);
             randomValueFuture.complete(randomValue);
+            LOGGER.info("Schedule Async With Future task Finished in thread: {}", Thread.currentThread());
         };
         taskScheduler.schedule(randomTask, Instant.now().plusSeconds(10));
 
         // Get the random value after execution
-        System.out.println("Scheduled random value: " + randomValueFuture.get());
+        try {
+            System.out.println("Scheduled random value: " + randomValueFuture.get());
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    @Scheduled(fixedRate = 3000)
+    @Scheduled(fixedRate = 5000)
     @Async
     public void scheduledTask() {
-        LOGGER.info("SchedulerTask started... {}", Thread.currentThread());
+        LOGGER.info("SchedulerTask started in thread :: {} at :: {}", Thread.currentThread(), LocalDateTime.now());
         LockSupport.parkNanos(2 * 1_000_000_000L);
-        LOGGER.info("SchedulerTask ended... {}", Thread.currentThread());
+        LOGGER.info("SchedulerTask ended in thread :: {} at :: {}", Thread.currentThread(), LocalDateTime.now());
     }
 }
